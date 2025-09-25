@@ -1,12 +1,63 @@
-// 简化版本：使用全局变量存储（重启会重置数据）
-// 解决 Netlify Blobs 配置问题
+// 使用简单的HTTP API存储服务
+// 解决多人多浏览器数据持久性问题
 
-// 全局状态存储（注意：函数重启会丢失数据）
-if (!global.lotteryState) {
-    global.lotteryState = {
-        drawnNumbers: [],
-        participants: []
-    };
+// 使用jsonbox.io作为免费在线JSON存储
+const STORAGE_URL = 'https://jsonbox.io/box_lottery_12345';
+
+// 读取状态
+async function readState() {
+    try {
+        const response = await fetch(`${STORAGE_URL}/state`);
+        if (response.ok) {
+            const data = await response.json();
+            // jsonbox 返回数组，取最新的记录
+            if (Array.isArray(data) && data.length > 0) {
+                return data[data.length - 1];
+            }
+        }
+        
+        // 返回默认状态
+        return { drawnNumbers: [], participants: [] };
+    } catch (error) {
+        console.error('Error reading state:', error);
+        return { drawnNumbers: [], participants: [] };
+    }
+}
+
+// 保存状态
+async function saveState(state) {
+    try {
+        // 先删除旧数据
+        try {
+            const oldData = await fetch(`${STORAGE_URL}/state`);
+            if (oldData.ok) {
+                const records = await oldData.json();
+                if (Array.isArray(records)) {
+                    for (const record of records) {
+                        if (record._id) {
+                            await fetch(`${STORAGE_URL}/${record._id}`, { method: 'DELETE' });
+                        }
+                    }
+                }
+            }
+        } catch (deleteError) {
+            console.log('Error deleting old data:', deleteError);
+        }
+        
+        // 保存新数据
+        const response = await fetch(`${STORAGE_URL}/state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(state)
+        });
+        
+        return response.ok;
+    } catch (error) {
+        console.error('Error saving state:', error);
+        return false;
+    }
 }
 
 exports.handler = async (event, context) => {
@@ -55,11 +106,12 @@ exports.handler = async (event, context) => {
             };
         }
         
-        // 获取当前状态
-        const currentState = global.lotteryState;
+        // 读取当前状态
+        const currentState = await readState();
+        console.log('Current state:', currentState);
         
         // 检查是否已满
-        if (currentState.drawnNumbers.length >= 23) {
+        if (currentState.drawnNumbers && currentState.drawnNumbers.length >= 23) {
             return {
                 statusCode: 400,
                 headers,
@@ -69,6 +121,10 @@ exports.handler = async (event, context) => {
                 })
             };
         }
+        
+        // 初始化数据结构
+        if (!currentState.drawnNumbers) currentState.drawnNumbers = [];
+        if (!currentState.participants) currentState.participants = [];
         
         // 生成可用号码列表
         const availableNumbers = [];
@@ -95,7 +151,10 @@ exports.handler = async (event, context) => {
             timestamp: timestamp
         });
         
-        console.log('Draw successful, current state:', currentState);
+        // 保存状态
+        const saved = await saveState(currentState);
+        
+        console.log('Draw successful, save result:', saved);
         
         return {
             statusCode: 200,
@@ -104,7 +163,8 @@ exports.handler = async (event, context) => {
                 success: true,
                 number: drawnNumber,
                 classNumber: classNumber.trim(),
-                timestamp: timestamp
+                timestamp: timestamp,
+                saved: saved
             })
         };
         

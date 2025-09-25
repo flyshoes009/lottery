@@ -1,12 +1,27 @@
-// 简化版本：使用全局变量存储（重启会重置数据）
-// 解决 Netlify Blobs 配置问题
+// 使用简单的HTTP API存储服务
+// 解决多人多浏览器数据持久性问题
 
-// 初始化全局状态
-if (!global.lotteryState) {
-    global.lotteryState = {
-        drawnNumbers: [],
-        participants: []
-    };
+// 使用jsonbox.io作为免费在线JSON存储
+const STORAGE_URL = 'https://jsonbox.io/box_lottery_12345';
+
+// 读取状态
+async function readState() {
+    try {
+        const response = await fetch(`${STORAGE_URL}/state`);
+        if (response.ok) {
+            const data = await response.json();
+            // jsonbox 返回数组，取最新的记录
+            if (Array.isArray(data) && data.length > 0) {
+                return data[data.length - 1];
+            }
+        }
+        
+        // 返回默认状态
+        return { drawnNumbers: [], participants: [] };
+    } catch (error) {
+        console.error('Error reading state:', error);
+        return { drawnNumbers: [], participants: [] };
+    }
 }
 
 exports.handler = async (event, context) => {
@@ -37,13 +52,15 @@ exports.handler = async (event, context) => {
     }
     
     try {
-        // 返回当前状态
+        // 读取当前状态
+        const currentState = await readState();
+        
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 success: true,
-                state: global.lotteryState
+                state: currentState
             })
         };
         
