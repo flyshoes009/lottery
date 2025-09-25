@@ -1,47 +1,80 @@
-// 国内友好的数据存储方案
-// 优先使用内存存储，确保高性能和可靠性
+// 使用Firebase Realtime Database实现数据持久化
+// Netlify Functions作为代理访问Firebase，解决国内访问限制
 
-// 全局状态存储（Netlify Functions 实例级别的持久存储）
-if (!global.lotteryStateData) {
-    global.lotteryStateData = {
+// Firebase配置 - 使用您的Firebase项目URL
+const FIREBASE_URL = 'https://lottery-system-a0809-default-rtdb.asia-southeast1.firebasedatabase.app';
+const DATABASE_PATH = '/lottery-state.json';
+
+// 读取状态（从Firebase）
+async function readState() {
+    try {
+        console.log('正在从Firebase读取状态...');
+        const response = await fetch(`${FIREBASE_URL}${DATABASE_PATH}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data && typeof data === 'object' && data.drawnNumbers) {
+                console.log('从Firebase成功读取状态:', {
+                    drawnCount: data.drawnNumbers.length,
+                    participantCount: data.participants ? data.participants.length : 0,
+                    lastUpdate: data.lastUpdate
+                });
+                return data;
+            } else if (data === null) {
+                console.log('Firebase数据为空，返回初始状态');
+            }
+        } else {
+            console.error('Firebase响应错误:', response.status, response.statusText);
+        }
+    } catch (error) {
+        console.error('读取Firebase状态失败:', error);
+    }
+    
+    // 返回默认状态
+    const defaultState = {
         drawnNumbers: [],
         participants: [],
         lastUpdate: new Date().toISOString(),
         version: 1
     };
-    console.log('初始化全局状态存储');
+    console.log('返回默认初始状态');
+    return defaultState;
 }
 
-// 读取状态（从内存）
-function readState() {
-    const state = global.lotteryStateData;
-    console.log('从内存读取状态:', {
-        drawnCount: state.drawnNumbers.length,
-        participantCount: state.participants.length,
-        lastUpdate: state.lastUpdate
-    });
-    return { ...state }; // 返回副本防止意外修改
-}
-
-// 保存状态（到内存）
-function saveState(state) {
+// 保存状态（到Firebase）
+async function saveState(state) {
     try {
-        // 更新时间戳和版本
-        state.lastUpdate = new Date().toISOString();
-        state.version = (global.lotteryStateData.version || 0) + 1;
+        console.log('正在保存状态到Firebase...');
         
-        // 保存到全局存储
-        global.lotteryStateData = { ...state };
+        // 添加时间戳和版本信息
+        const stateToSave = {
+            ...state,
+            lastUpdate: new Date().toISOString(),
+            version: (state.version || 0) + 1
+        };
         
-        console.log('状态已保存到内存:', {
-            version: state.version,
-            drawnCount: state.drawnNumbers.length,
-            participantCount: state.participants.length
+        const response = await fetch(`${FIREBASE_URL}${DATABASE_PATH}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(stateToSave)
         });
         
-        return true;
+        if (response.ok) {
+            console.log('状态已成功保存到Firebase:', {
+                version: stateToSave.version,
+                drawnCount: stateToSave.drawnNumbers.length,
+                participantCount: stateToSave.participants.length,
+                timestamp: stateToSave.lastUpdate
+            });
+            return true;
+        } else {
+            console.error('保存到Firebase失败:', response.status, response.statusText);
+            return false;
+        }
     } catch (error) {
-        console.error('保存状态失败:', error);
+        console.error('保存状态到Firebase出错:', error);
         return false;
     }
 }
@@ -93,7 +126,7 @@ exports.handler = async (event, context) => {
         }
         
         // 读取当前状态
-        const currentState = readState();
+        const currentState = await readState();
         console.log('Current state:', currentState);
         
         // 检查是否已满
@@ -138,7 +171,7 @@ exports.handler = async (event, context) => {
         });
         
         // 保存状态
-        const saved = saveState(currentState);
+        const saved = await saveState(currentState);
         
         console.log('Draw successful, save result:', saved);
         

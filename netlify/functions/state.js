@@ -1,26 +1,45 @@
-// 国内友好的数据存储方案
-// 优先使用内存存储，确保高性能和可靠性
+// 使用Firebase Realtime Database实现数据持久化
+// Netlify Functions作为代理访问Firebase，解决国内访问限制
 
-// 初始化全局状态存储
-if (!global.lotteryStateData) {
-    global.lotteryStateData = {
+// Firebase配置 - 使用您的Firebase项目URL
+const FIREBASE_URL = 'https://lottery-system-a0809-default-rtdb.asia-southeast1.firebasedatabase.app';
+const DATABASE_PATH = '/lottery-state.json';
+
+// 读取状态（从Firebase）
+async function readState() {
+    try {
+        console.log('正在从Firebase读取状态...');
+        const response = await fetch(`${FIREBASE_URL}${DATABASE_PATH}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data && typeof data === 'object' && data.drawnNumbers) {
+                console.log('成功从Firebase获取状态:', {
+                    drawnCount: data.drawnNumbers.length,
+                    participantCount: data.participants ? data.participants.length : 0,
+                    lastUpdate: data.lastUpdate,
+                    version: data.version
+                });
+                return data;
+            } else if (data === null) {
+                console.log('Firebase数据为空，返回初始状态');
+            }
+        } else {
+            console.error('Firebase响应错误:', response.status, response.statusText);
+        }
+    } catch (error) {
+        console.error('从 Firebase 读取状态失败:', error);
+    }
+    
+    // 返回默认状态
+    const defaultState = {
         drawnNumbers: [],
         participants: [],
         lastUpdate: new Date().toISOString(),
         version: 1
     };
-}
-
-// 读取状态（从内存）
-function readState() {
-    const state = global.lotteryStateData;
-    console.log('返回当前状态:', {
-        drawnCount: state.drawnNumbers.length,
-        participantCount: state.participants.length,
-        lastUpdate: state.lastUpdate,
-        version: state.version
-    });
-    return { ...state }; // 返回副本
+    console.log('返回默认初始状态');
+    return defaultState;
 }
 
 exports.handler = async (event, context) => {
@@ -52,7 +71,7 @@ exports.handler = async (event, context) => {
     
     try {
         // 读取当前状态
-        const currentState = readState();
+        const currentState = await readState();
         
         return {
             statusCode: 200,

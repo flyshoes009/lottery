@@ -1,32 +1,41 @@
-// 国内友好的数据存储方案
-// 优先使用内存存储，确保高性能和可靠性
+// 使用Firebase Realtime Database实现数据持久化
+// Netlify Functions作为代理访问Firebase，解决国内访问限制
 
-// 初始化全局状态存储
-if (!global.lotteryStateData) {
-    global.lotteryStateData = {
-        drawnNumbers: [],
-        participants: [],
-        lastUpdate: new Date().toISOString(),
-        version: 1
-    };
-}
+// Firebase配置 - 使用您的Firebase项目URL
+const FIREBASE_URL = 'https://lottery-system-a0809-default-rtdb.asia-southeast1.firebasedatabase.app';
+const DATABASE_PATH = '/lottery-state.json';
 
-// 保存状态（到内存）
-function saveState(state) {
+// 保存状态（到Firebase）
+async function saveState(state) {
     try {
-        state.lastUpdate = new Date().toISOString();
-        state.version = (global.lotteryStateData.version || 0) + 1;
-        global.lotteryStateData = { ...state };
+        console.log('正在重置并保存状态到Firebase...');
         
-        console.log('重置状态已保存:', {
-            version: state.version,
-            drawnCount: state.drawnNumbers.length,
-            participantCount: state.participants.length
+        const stateToSave = {
+            ...state,
+            lastUpdate: new Date().toISOString(),
+            version: 1 // 重置时版本号重置为1
+        };
+        
+        const response = await fetch(`${FIREBASE_URL}${DATABASE_PATH}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(stateToSave)
         });
         
-        return true;
+        if (response.ok) {
+            console.log('状态已成功重置并保存到Firebase:', {
+                version: stateToSave.version,
+                timestamp: stateToSave.lastUpdate
+            });
+            return true;
+        } else {
+            console.error('重置并保存到Firebase失败:', response.status, response.statusText);
+            return false;
+        }
     } catch (error) {
-        console.error('保存状态失败:', error);
+        console.error('重置状态到Firebase出错:', error);
         return false;
     }
 }
@@ -80,7 +89,7 @@ exports.handler = async (event, context) => {
         };
         
         // 保存重置状态
-        const saved = saveState(initialState);
+        const saved = await saveState(initialState);
         
         return {
             statusCode: 200,
