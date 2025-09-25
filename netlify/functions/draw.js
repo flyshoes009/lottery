@@ -1,31 +1,40 @@
-const { getStore } = require('@netlify/blobs');
+// 简化版本：使用全局变量存储（重启会重置数据）
+// 解决 Netlify Blobs 配置问题
+
+// 全局状态存储（注意：函数重启会丢失数据）
+if (!global.lotteryState) {
+    global.lotteryState = {
+        drawnNumbers: [],
+        participants: []
+    };
+}
 
 exports.handler = async (event, context) => {
     console.log('Draw function called:', event.httpMethod);
     
-    // 只允许POST请求
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS'
-            },
-            body: JSON.stringify({ success: false, message: 'Method not allowed' })
-        };
-    }
+    // 设置CORS头
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+    };
     
     // 处理CORS预检请求
     if (event.httpMethod === 'OPTIONS') {
         return {
             statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS'
-            },
+            headers,
             body: ''
+        };
+    }
+    
+    // 只允许POST请求
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            headers,
+            body: JSON.stringify({ success: false, message: 'Method not allowed' })
         };
     }
     
@@ -38,10 +47,7 @@ exports.handler = async (event, context) => {
             console.log('Class number validation failed');
             return {
                 statusCode: 400,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
+                headers,
                 body: JSON.stringify({ 
                     success: false, 
                     message: '班级号不能为空' 
@@ -49,36 +55,14 @@ exports.handler = async (event, context) => {
             };
         }
         
-        console.log('Initializing store...');
-        // 使用Netlify Blobs作为简单的数据存储
-        const store = getStore('lottery-data');
-        
         // 获取当前状态
-        let currentState;
-        try {
-            console.log('Getting current state...');
-            const stateData = await store.get('current-state');
-            currentState = stateData ? JSON.parse(stateData) : {
-                drawnNumbers: [],
-                participants: []
-            };
-            console.log('Current state:', currentState);
-        } catch (error) {
-            console.log('Error getting state, using default:', error);
-            currentState = {
-                drawnNumbers: [],
-                participants: []
-            };
-        }
+        const currentState = global.lotteryState;
         
         // 检查是否已满
         if (currentState.drawnNumbers.length >= 23) {
             return {
                 statusCode: 400,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
+                headers,
                 body: JSON.stringify({
                     success: false,
                     message: '所有号码已被抽完'
@@ -111,17 +95,11 @@ exports.handler = async (event, context) => {
             timestamp: timestamp
         });
         
-        console.log('Saving updated state...');
-        // 保存状态
-        await store.set('current-state', JSON.stringify(currentState));
+        console.log('Draw successful, current state:', currentState);
         
-        console.log('Draw successful');
         return {
             statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 success: true,
                 number: drawnNumber,
@@ -134,10 +112,7 @@ exports.handler = async (event, context) => {
         console.error('抽签错误:', error);
         return {
             statusCode: 500,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 success: false,
                 message: '服务器内部错误: ' + error.message,

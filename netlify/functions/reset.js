@@ -1,43 +1,49 @@
-const { getStore } = require('@netlify/blobs');
+// 简化版本：使用全局变量存储（重启会重置数据）
+// 解决 Netlify Blobs 配置问题
+
+// 初始化全局状态
+if (!global.lotteryState) {
+    global.lotteryState = {
+        drawnNumbers: [],
+        participants: []
+    };
+}
 
 exports.handler = async (event, context) => {
-    // 只允许POST请求
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS'
-            },
-            body: JSON.stringify({ success: false, message: 'Method not allowed' })
-        };
-    }
+    // 设置CORS头
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Content-Type': 'application/json'
+    };
     
     // 处理CORS预检请求
     if (event.httpMethod === 'OPTIONS') {
         return {
             statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS'
-            },
+            headers,
             body: ''
         };
     }
     
+    // 只允许POST请求
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            headers,
+            body: JSON.stringify({ success: false, message: 'Method not allowed' })
+        };
+    }
+    
     try {
-        const { password } = JSON.parse(event.body);
+        const { password } = JSON.parse(event.body || '{}');
         
         // 验证密码
         if (password !== '12345678') {
             return {
                 statusCode: 401,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/json'
-                },
+                headers,
                 body: JSON.stringify({
                     success: false,
                     message: '密码错误'
@@ -45,23 +51,15 @@ exports.handler = async (event, context) => {
             };
         }
         
-        // 使用Netlify Blobs重置数据
-        const store = getStore('lottery-data');
-        
         // 重置状态
-        const initialState = {
+        global.lotteryState = {
             drawnNumbers: [],
             participants: []
         };
         
-        await store.set('current-state', JSON.stringify(initialState));
-        
         return {
             statusCode: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 success: true,
                 message: '抽签已重置'
@@ -72,10 +70,7 @@ exports.handler = async (event, context) => {
         console.error('重置错误:', error);
         return {
             statusCode: 500,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 success: false,
                 message: '服务器内部错误'

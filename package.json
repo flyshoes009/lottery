@@ -8,9 +8,7 @@
     "build": "echo 'No build step required'",
     "deploy": "netlify deploy --prod"
   },
-  "dependencies": {
-    "@netlify/blobs": "^7.0.0"
-  },
+  "dependencies": {},
   "keywords": [
     "lottery",
     "netlify",
