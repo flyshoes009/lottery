@@ -9,7 +9,7 @@
     "deploy": "netlify deploy --prod"
   },
   "dependencies": {
-    "@netlify/blobs": "^6.5.0"
+    "@netlify/blobs": "^7.0.0"
   },
   "keywords": [
     "lottery",

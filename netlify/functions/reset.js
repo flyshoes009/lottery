@@ -1,4 +1,4 @@
-const { Store } = require('@netlify/blobs');
+const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {
     // 只允许POST请求
@@ -46,7 +46,7 @@ exports.handler = async (event, context) => {
         }
         
         // 使用Netlify Blobs重置数据
-        const store = new Store('lottery-data');
+        const store = getStore('lottery-data');
         
         // 重置状态
         const initialState = {

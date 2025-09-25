@@ -1,4 +1,4 @@
-const { Store } = require('@netlify/blobs');
+const { getStore } = require('@netlify/blobs');
 
 exports.handler = async (event, context) => {
     // 只允许GET请求
@@ -29,7 +29,7 @@ exports.handler = async (event, context) => {
     
     try {
         // 使用Netlify Blobs获取当前状态
-        const store = new Store('lottery-data');
+        const store = getStore('lottery-data');
         
         let currentState;
         try {
