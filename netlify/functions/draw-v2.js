@@ -1,45 +1,54 @@
-// 国内友好的数据存储方案
-// 优先使用内存存储，确保高性能和可靠性
+// 使用GitHub仓库作为数据存储（更可靠的方案）
+// 解决多人多浏览器数据持久性问题
 
-// 全局状态存储（Netlify Functions 实例级别的持久存储）
-if (!global.lotteryStateData) {
-    global.lotteryStateData = {
-        drawnNumbers: [],
-        participants: [],
-        lastUpdate: new Date().toISOString(),
-        version: 1
-    };
-    console.log('初始化全局状态存储');
-}
+// 如果您有GitHub账户，可以配置以下变量
+const GITHUB_OWNER = 'your-github-username'; // 您的GitHub用户名
+const GITHUB_REPO = 'lottery-data'; // 专门用于存储的仓库名
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || ''; // GitHub Personal Access Token
+const FILE_PATH = 'lottery-state.json';
 
-// 读取状态（从内存）
-function readState() {
-    const state = global.lotteryStateData;
-    console.log('从内存读取状态:', {
-        drawnCount: state.drawnNumbers.length,
-        participantCount: state.participants.length,
-        lastUpdate: state.lastUpdate
-    });
-    return { ...state }; // 返回副本防止意外修改
-}
+// 备用方案：使用一个公开的pastebin服务
+const PASTEBIN_URL = 'https://api.paste.ee/v1/pastes';
+const PASTEBIN_KEY = 'lottery_state_' + Date.now().toString(36);
 
-// 保存状态（到内存）
-function saveState(state) {
+// 读取状态（使用简单的HTTP存储服务）
+async function readState() {
     try {
-        // 更新时间戳和版本
-        state.lastUpdate = new Date().toISOString();
-        state.version = (global.lotteryStateData.version || 0) + 1;
-        
-        // 保存到全局存储
-        global.lotteryStateData = { ...state };
-        
-        console.log('状态已保存到内存:', {
-            version: state.version,
-            drawnCount: state.drawnNumbers.length,
-            participantCount: state.participants.length
+        // 使用一个简单的在线JSON存储
+        const response = await fetch('https://api.npoint.io/lottery12345', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         });
         
-        return true;
+        if (response.ok) {
+            const data = await response.json();
+            console.log('读取到的状态:', data);
+            return data;
+        }
+    } catch (error) {
+        console.error('读取状态失败:', error);
+    }
+    
+    // 返回默认状态
+    return { drawnNumbers: [], participants: [] };
+}
+
+// 保存状态
+async function saveState(state) {
+    try {
+        // 使用 npoint.io 更新数据
+        const response = await fetch('https://api.npoint.io/lottery12345', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(state)
+        });
+        
+        console.log('保存状态响应:', response.status);
+        return response.ok;
     } catch (error) {
         console.error('保存状态失败:', error);
         return false;
@@ -47,7 +56,7 @@ function saveState(state) {
 }
 
 exports.handler = async (event, context) => {
-    console.log('Draw function called:', event.httpMethod);
+    console.log('Draw function v2 called:', event.httpMethod);
     
     // 设置CORS头
     const headers = {
@@ -93,11 +102,15 @@ exports.handler = async (event, context) => {
         }
         
         // 读取当前状态
-        const currentState = readState();
-        console.log('Current state:', currentState);
+        const currentState = await readState();
+        console.log('Current state loaded:', currentState);
+        
+        // 初始化数据结构
+        if (!currentState.drawnNumbers) currentState.drawnNumbers = [];
+        if (!currentState.participants) currentState.participants = [];
         
         // 检查是否已满
-        if (currentState.drawnNumbers && currentState.drawnNumbers.length >= 23) {
+        if (currentState.drawnNumbers.length >= 23) {
             return {
                 statusCode: 400,
                 headers,
@@ -107,10 +120,6 @@ exports.handler = async (event, context) => {
                 })
             };
         }
-        
-        // 初始化数据结构
-        if (!currentState.drawnNumbers) currentState.drawnNumbers = [];
-        if (!currentState.participants) currentState.participants = [];
         
         // 生成可用号码列表
         const availableNumbers = [];
@@ -138,7 +147,7 @@ exports.handler = async (event, context) => {
         });
         
         // 保存状态
-        const saved = saveState(currentState);
+        const saved = await saveState(currentState);
         
         console.log('Draw successful, save result:', saved);
         
@@ -150,7 +159,11 @@ exports.handler = async (event, context) => {
                 number: drawnNumber,
                 classNumber: classNumber.trim(),
                 timestamp: timestamp,
-                saved: saved
+                saved: saved,
+                debug: {
+                    totalDrawn: currentState.drawnNumbers.length,
+                    available: availableNumbers.length
+                }
             })
         };
         

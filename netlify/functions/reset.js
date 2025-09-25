@@ -1,41 +1,32 @@
-// 使用简单的HTTP API存储服务
-// 解决多人多浏览器数据持久性问题
+// 国内友好的数据存储方案
+// 优先使用内存存储，确保高性能和可靠性
 
-// 使用jsonbox.io作为免费在线JSON存储
-const STORAGE_URL = 'https://jsonbox.io/box_lottery_12345';
+// 初始化全局状态存储
+if (!global.lotteryStateData) {
+    global.lotteryStateData = {
+        drawnNumbers: [],
+        participants: [],
+        lastUpdate: new Date().toISOString(),
+        version: 1
+    };
+}
 
-// 保存状态
-async function saveState(state) {
+// 保存状态（到内存）
+function saveState(state) {
     try {
-        // 先删除旧数据
-        try {
-            const oldData = await fetch(`${STORAGE_URL}/state`);
-            if (oldData.ok) {
-                const records = await oldData.json();
-                if (Array.isArray(records)) {
-                    for (const record of records) {
-                        if (record._id) {
-                            await fetch(`${STORAGE_URL}/${record._id}`, { method: 'DELETE' });
-                        }
-                    }
-                }
-            }
-        } catch (deleteError) {
-            console.log('Error deleting old data:', deleteError);
-        }
+        state.lastUpdate = new Date().toISOString();
+        state.version = (global.lotteryStateData.version || 0) + 1;
+        global.lotteryStateData = { ...state };
         
-        // 保存新数据
-        const response = await fetch(`${STORAGE_URL}/state`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(state)
+        console.log('重置状态已保存:', {
+            version: state.version,
+            drawnCount: state.drawnNumbers.length,
+            participantCount: state.participants.length
         });
         
-        return response.ok;
+        return true;
     } catch (error) {
-        console.error('Error saving state:', error);
+        console.error('保存状态失败:', error);
         return false;
     }
 }
@@ -89,7 +80,7 @@ exports.handler = async (event, context) => {
         };
         
         // 保存重置状态
-        const saved = await saveState(initialState);
+        const saved = saveState(initialState);
         
         return {
             statusCode: 200,
