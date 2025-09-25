@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编号抽签系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>编号抽签系统</h1>
+            <div class="status">
+                <span id="statusText">等待开始</span>
+                <span id="participantCount">已抽签人数: 0/23</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- 抽签区域 -->
+            <div class="lottery-section">
+                <div class="input-group">
+                    <label for="classNumber">班级号:</label>
+                    <input type="text" id="classNumber" placeholder="请输入班级号" maxlength="20">
+                </div>
+                <button id="drawButton" class="draw-btn">抽签</button>
+                <div id="result" class="result"></div>
+            </div>
+
+            <!-- 号码显示区域 -->
+            <div class="numbers-grid">
+                <h3>号码状态</h3>
+                <div class="grid" id="numbersGrid">
+                    <!-- 1-23号码格子将通过JavaScript生成 -->
+                </div>
+            </div>
+
+            <!-- 结果显示区域 -->
+            <div class="results-section">
+                <div class="results-header">
+                    <h3>抽签结果</h3>
+                    <div class="action-buttons">
+                        <button id="exportButton" class="action-btn">导出CSV</button>
+                        <button id="resetButton" class="action-btn reset-btn">重新开始</button>
+                    </div>
+                </div>
+                <div class="results-table">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>班级号</th>
+                                <th>抽中号码</th>
+                                <th>抽签时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 重置密码弹窗 -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <h3>重新开始抽签</h3>
+            <p>请输入密码确认重新开始：</p>
+            <input type="password" id="resetPassword" placeholder="请输入密码">
+            <div class="modal-buttons">
+                <button id="confirmReset" class="action-btn">确认</button>
+                <button id="cancelReset" class="action-btn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
