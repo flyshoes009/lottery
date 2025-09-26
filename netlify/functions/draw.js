@@ -4,6 +4,7 @@
 // Firebase配置
 const FIREBASE_URL = 'https://lottery-system-a0809-default-rtdb.asia-southeast1.firebasedatabase.app';
 const DATABASE_PATH = '/lottery-state.json';
+const CONFIG_PATH = '/lottery-config.json';
 
 // 最大重试次数
 const MAX_RETRY_ATTEMPTS = 3;
@@ -12,6 +13,30 @@ const RETRY_DELAY_MS = 100;
 // 延迟函数
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 读取配置
+async function readConfig() {
+    try {
+        console.log('正在从Firebase读取配置...');
+        const response = await fetch(`${FIREBASE_URL}${CONFIG_PATH}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data && typeof data === 'object') {
+                console.log('从Firebase成功读取配置:', data);
+                return data;
+            }
+        }
+    } catch (error) {
+        console.error('读取配置失败:', error);
+    }
+    
+    // 返回默认配置
+    return {
+        totalNumbers: 23,
+        isLocked: false
+    };
 }
 
 // 读取状态（从Firebase）
@@ -99,6 +124,12 @@ async function atomicSaveState(newState, expectedVersion) {
 
 // 带重试机制的抽签函数
 async function performDrawWithRetry(classNumber) {
+    // 首先读取配置
+    const config = await readConfig();
+    const totalNumbers = config.totalNumbers || 23;
+    
+    console.log(`开始抽签，号码总数: ${totalNumbers}`);
+    
     for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
         console.log(`抽签尝试 ${attempt}/${MAX_RETRY_ATTEMPTS}`);
         
@@ -107,7 +138,7 @@ async function performDrawWithRetry(classNumber) {
             const currentState = await readState();
             
             // 检查是否已满
-            if (currentState.drawnNumbers && currentState.drawnNumbers.length >= 23) {
+            if (currentState.drawnNumbers && currentState.drawnNumbers.length >= totalNumbers) {
                 return {
                     success: false,
                     message: '所有号码已被抽完',
@@ -121,7 +152,7 @@ async function performDrawWithRetry(classNumber) {
             
             // 生成可用号码列表
             const availableNumbers = [];
-            for (let i = 1; i <= 23; i++) {
+            for (let i = 1; i <= totalNumbers; i++) {
                 if (!currentState.drawnNumbers.includes(i)) {
                     availableNumbers.push(i);
                 }
@@ -152,7 +183,8 @@ async function performDrawWithRetry(classNumber) {
                     classNumber: classNumber.trim(),
                     number: drawnNumber,
                     timestamp: timestamp
-                }]
+                }],
+                totalNumbers: totalNumbers // 保存当前配置
             };
             
             // 原子性保存
@@ -165,7 +197,8 @@ async function performDrawWithRetry(classNumber) {
                     number: drawnNumber,
                     classNumber: classNumber.trim(),
                     timestamp: timestamp,
-                    attempts: attempt
+                    attempts: attempt,
+                    totalNumbers: totalNumbers
                 };
             } else if (saveResult.conflict) {
                 console.log(`第 ${attempt} 次尝试发生并发冲突，准备重试...`);
@@ -261,6 +294,7 @@ exports.handler = async (event, context) => {
                     classNumber: drawResult.classNumber,
                     timestamp: drawResult.timestamp,
                     attempts: drawResult.attempts,
+                    totalNumbers: drawResult.totalNumbers,
                     message: drawResult.attempts > 1 ? 
                         `抽签成功（经过${drawResult.attempts}次尝试）` : 
                         '抽签成功'

@@ -58,6 +58,96 @@ main {
     margin-bottom: 30px;
 }
 
+/* 配置区域 */
+.config-section {
+    grid-column: 1 / -1;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.config-section h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #4a5568;
+    font-size: 1.3em;
+}
+
+.config-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.config-group label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 1.1em;
+}
+
+.config-group input[type="number"] {
+    width: 100px;
+    padding: 10px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1em;
+    text-align: center;
+    transition: border-color 0.3s ease;
+}
+
+.config-group input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.config-btn {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1em;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.config-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+}
+
+.config-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+}
+
+.config-status {
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    min-height: 20px;
+}
+
+.config-status.success {
+    background: rgba(72, 187, 120, 0.1);
+    color: #38a169;
+    border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+.config-status.error {
+    background: rgba(245, 101, 101, 0.1);
+    color: #e53e3e;
+    border: 1px solid rgba(245, 101, 101, 0.3);
+}
+
 /* 抽签区域 */
 .lottery-section {
     background: rgba(255, 255, 255, 0.95);
@@ -145,6 +235,9 @@ main {
     padding: 30px;
     border-radius: 15px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
 }
 
 .numbers-grid h3 {
@@ -152,12 +245,34 @@ main {
     margin-bottom: 20px;
     color: #4a5568;
     font-size: 1.3em;
+    flex-shrink: 0;
 }
 
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
     gap: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
+    padding-right: 5px;
+}
+
+.grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.grid::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.grid::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+}
+
+.grid::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
 }
 
 .number-cell {

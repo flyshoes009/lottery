@@ -2,11 +2,16 @@
 let isLotteryActive = false;
 let drawnNumbers = new Set();
 let participants = [];
+let totalNumbers = 23; // 默认号码个数
+let isConfigLocked = false; // 配置是否被锁定
 
 // DOM元素
 const elements = {
     statusText: document.getElementById('statusText'),
     participantCount: document.getElementById('participantCount'),
+    totalNumbers: document.getElementById('totalNumbers'),
+    configButton: document.getElementById('configButton'),
+    configStatus: document.getElementById('configStatus'),
     classNumber: document.getElementById('classNumber'),
     drawButton: document.getElementById('drawButton'),
     result: document.getElementById('result'),
@@ -22,15 +27,119 @@ const elements = {
 
 // 初始化页面
 document.addEventListener('DOMContentLoaded', function() {
-    initializeNumbersGrid();
+    loadConfig(); // 先加载配置
     loadLotteryState();
     bindEvents();
 });
 
+// 加载配置
+async function loadConfig() {
+    try {
+        const response = await fetch('/.netlify/functions/config');
+        const data = await response.json();
+        
+        if (data.success && data.config) {
+            totalNumbers = data.config.totalNumbers || 23;
+            isConfigLocked = data.config.isLocked || false;
+            
+            // 更新配置界面
+            elements.totalNumbers.value = totalNumbers;
+            updateConfigUI();
+            
+            // 初始化号码网格
+            initializeNumbersGrid();
+            
+            showConfigStatus(`当前号码个数: ${totalNumbers}`, 'success');
+        } else {
+            // 使用默认配置
+            initializeNumbersGrid();
+        }
+    } catch (error) {
+        console.error('加载配置失败:', error);
+        // 使用默认配置
+        initializeNumbersGrid();
+    }
+}
+
+// 更新配置界面
+function updateConfigUI() {
+    elements.configButton.disabled = isConfigLocked;
+    elements.totalNumbers.disabled = isConfigLocked;
+    
+    if (isConfigLocked) {
+        elements.configButton.textContent = '已锁定';
+        showConfigStatus('抽签已开始，无法修改配置', 'error');
+    } else {
+        elements.configButton.textContent = '确认配置';
+    }
+}
+
+// 显示配置状态
+function showConfigStatus(message, type) {
+    elements.configStatus.textContent = message;
+    elements.configStatus.className = `config-status ${type}`;
+    
+    if (type === 'success') {
+        setTimeout(() => {
+            if (elements.configStatus.textContent === message) {
+                elements.configStatus.textContent = '';
+                elements.configStatus.className = 'config-status';
+            }
+        }, 3000);
+    }
+}
+
+// 处理配置更新
+async function handleConfigUpdate() {
+    const newTotalNumbers = parseInt(elements.totalNumbers.value);
+    
+    if (!newTotalNumbers || newTotalNumbers < 1 || newTotalNumbers > 100) {
+        showConfigStatus('号码个数必须在1-100之间', 'error');
+        return;
+    }
+    
+    if (newTotalNumbers === totalNumbers) {
+        showConfigStatus('配置没有变化', 'error');
+        return;
+    }
+    
+    elements.configButton.disabled = true;
+    elements.configButton.textContent = '配置中...';
+    
+    try {
+        const response = await fetch('/.netlify/functions/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ totalNumbers: newTotalNumbers })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            totalNumbers = newTotalNumbers;
+            initializeNumbersGrid();
+            updateStatus();
+            showConfigStatus(data.message, 'success');
+        } else {
+            showConfigStatus(data.message || '配置失败', 'error');
+            elements.totalNumbers.value = totalNumbers; // 恢复原值
+        }
+    } catch (error) {
+        console.error('配置更新错误:', error);
+        showConfigStatus('网络错误，请重试', 'error');
+        elements.totalNumbers.value = totalNumbers; // 恢复原值
+    } finally {
+        elements.configButton.disabled = false;
+        elements.configButton.textContent = '确认配置';
+    }
+}
+
 // 初始化号码网格
 function initializeNumbersGrid() {
     elements.numbersGrid.innerHTML = '';
-    for (let i = 1; i <= 23; i++) {
+    for (let i = 1; i <= totalNumbers; i++) {
         const cell = document.createElement('div');
         cell.className = 'number-cell available';
         cell.textContent = i;
@@ -41,6 +150,7 @@ function initializeNumbersGrid() {
 
 // 绑定事件
 function bindEvents() {
+    elements.configButton.addEventListener('click', handleConfigUpdate);
     elements.drawButton.addEventListener('click', handleDraw);
     elements.exportButton.addEventListener('click', exportToCSV);
     elements.resetButton.addEventListener('click', showResetModal);
@@ -51,6 +161,12 @@ function bindEvents() {
     elements.classNumber.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             handleDraw();
+        }
+    });
+    
+    elements.totalNumbers.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            handleConfigUpdate();
         }
     });
     
@@ -78,7 +194,7 @@ async function handleDraw() {
     }
     
     // 检查是否已经抽完
-    if (drawnNumbers.size >= 23) {
+    if (drawnNumbers.size >= totalNumbers) {
         showResult('所有号码已被抽完！', 'error');
         return;
     }
@@ -98,6 +214,13 @@ async function handleDraw() {
         const data = await response.json();
         
         if (data.success) {
+            // 检查是否需要更新配置
+            if (data.totalNumbers && data.totalNumbers !== totalNumbers) {
+                totalNumbers = data.totalNumbers;
+                elements.totalNumbers.value = totalNumbers;
+                initializeNumbersGrid();
+            }
+            
             // 更新本地状态
             drawnNumbers.add(data.number);
             participants.push({
@@ -110,6 +233,7 @@ async function handleDraw() {
             updateNumbersGrid();
             updateResultsTable();
             updateStatus();
+            updateConfigUI(); // 更新配置界面状态
             
             showResult(`恭喜！您抽到了 ${data.number} 号`, 'success');
             elements.classNumber.value = '';
@@ -141,22 +265,24 @@ function showResult(message, type) {
 
 // 更新号码网格显示
 function updateNumbersGrid() {
-    for (let i = 1; i <= 23; i++) {
+    for (let i = 1; i <= totalNumbers; i++) {
         const cell = document.getElementById(`number-${i}`);
-        if (drawnNumbers.has(i)) {
-            cell.className = 'number-cell taken';
-            // 显示班级号
-            const participant = participants.find(p => p.number === i);
-            if (participant) {
-                cell.textContent = `${i}\n${participant.classNumber}`;
-                cell.style.fontSize = '0.9em';
-                cell.style.lineHeight = '1.2';
+        if (cell) {
+            if (drawnNumbers.has(i)) {
+                cell.className = 'number-cell taken';
+                // 显示班级号
+                const participant = participants.find(p => p.number === i);
+                if (participant) {
+                    cell.textContent = `${i}\n${participant.classNumber}`;
+                    cell.style.fontSize = '0.9em';
+                    cell.style.lineHeight = '1.2';
+                }
+            } else {
+                cell.className = 'number-cell available';
+                cell.textContent = i;
+                cell.style.fontSize = '';
+                cell.style.lineHeight = '';
             }
-        } else {
-            cell.className = 'number-cell available';
-            cell.textContent = i;
-            cell.style.fontSize = '';
-            cell.style.lineHeight = '';
         }
     }
 }
@@ -190,7 +316,7 @@ function updateStatus() {
     if (participants.length === 0) {
         elements.statusText.textContent = '等待开始';
         isLotteryActive = false;
-    } else if (participants.length >= 23) {
+    } else if (participants.length >= totalNumbers) {
         elements.statusText.textContent = '抽签完成';
         isLotteryActive = false;
     } else {
@@ -198,7 +324,7 @@ function updateStatus() {
         isLotteryActive = true;
     }
     
-    elements.participantCount.textContent = `已抽签人数: ${participants.length}/23`;
+    elements.participantCount.textContent = `已抽签人数: ${participants.length}/${totalNumbers}`;
 }
 
 // 导出CSV
@@ -282,8 +408,8 @@ async function confirmReset() {
             drawnNumbers.clear();
             participants = [];
             
-            // 重置界面
-            initializeNumbersGrid();
+            // 重新加载配置和界面
+            await loadConfig();
             updateResultsTable();
             updateStatus();
             hideResetModal();
@@ -309,10 +435,22 @@ async function loadLotteryState() {
             drawnNumbers = new Set(data.state.drawnNumbers || []);
             participants = data.state.participants || [];
             
+            // 更新配置
+            if (data.state.totalNumbers) {
+                totalNumbers = data.state.totalNumbers;
+                elements.totalNumbers.value = totalNumbers;
+            }
+            
+            // 检查是否已开始抽签
+            if (participants.length > 0) {
+                isConfigLocked = true;
+            }
+            
             // 更新界面
             updateNumbersGrid();
             updateResultsTable();
             updateStatus();
+            updateConfigUI();
         }
     } catch (error) {
         console.error('加载状态错误:', error);

@@ -4,6 +4,23 @@
 // Firebase配置 - 使用您的Firebase项目URL
 const FIREBASE_URL = 'https://lottery-system-a0809-default-rtdb.asia-southeast1.firebasedatabase.app';
 const DATABASE_PATH = '/lottery-state.json';
+const CONFIG_PATH = '/lottery-config.json';
+
+// 读取配置
+async function readConfig() {
+    try {
+        const response = await fetch(`${FIREBASE_URL}${CONFIG_PATH}`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data && typeof data === 'object') {
+                return data;
+            }
+        }
+    } catch (error) {
+        console.error('读取配置失败:', error);
+    }
+    return { totalNumbers: 23 };
+}
 
 // 读取状态（从Firebase）
 async function readState() {
@@ -70,15 +87,20 @@ exports.handler = async (event, context) => {
     }
     
     try {
-        // 读取当前状态
+        // 读取当前状态和配置
         const currentState = await readState();
+        const config = await readConfig();
         
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 success: true,
-                state: currentState
+                state: {
+                    ...currentState,
+                    totalNumbers: config.totalNumbers || 23
+                },
+                config: config
             })
         };
         
