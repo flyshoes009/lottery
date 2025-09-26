@@ -60,127 +60,74 @@ main {
     width: 100%;
 }
 
-/* 配置区域 - 独占一整行 */
+/* 配置区域 - 与抽签区域保持一致的简洁样式 */
 .config-section {
-    background: rgba(255, 255, 255, 0.95) !important;
-    padding: 30px !important;
-    border-radius: 15px !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
-    margin-bottom: 0 !important;
-    width: 100% !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: relative !important;
-    z-index: 100 !important;
-    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-/* 强制背景颜色 - 多种方式确保生效 */
-.config-section,
-.container .config-section,
-main .config-section,
-.container main .config-section {
-    background-color: #ffffff !important;
-    background: white !important;
+/* 配置区域标题 - 与抽签区域统一 */
+.config-section h2 {
+    margin-bottom: 25px;
+    color: #4a5568;
+    font-size: 1.5em;
+    font-weight: 700;
+    text-align: center;
 }
 
-.config-section h3 {
-    text-align: center !important;
-    margin-bottom: 25px !important;
-    color: #4a5568 !important;
-    font-size: 1.5em !important;
-    font-weight: 700 !important;
-    background: transparent !important;
-    display: block !important;
-}
-
-.config-group {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 20px !important;
-    flex-wrap: wrap !important;
-    margin-bottom: 15px !important;
-    background: transparent !important;
-}
-
-.config-group label {
-    font-weight: 600 !important;
-    color: #4a5568 !important;
-    font-size: 1.2em !important;
-    background: transparent !important;
-}
-
-.config-group input[type="number"] {
-    width: 120px !important;
-    padding: 12px 16px !important;
-    border: 2px solid #e2e8f0 !important;
-    border-radius: 8px !important;
-    font-size: 1.1em !important;
-    text-align: center !important;
-    transition: border-color 0.3s ease !important;
-    background: white !important;
-}
-
-.config-group input[type="number"]:focus {
-    outline: none !important;
-    border-color: #667eea !important;
-}
-
-/* 配置按钮 - 与抽签按钮风格统一 */
+/* 配置按钮 - 与抽签按钮风格完全一致 */
 .config-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    border: none !important;
-    padding: 15px 30px !important;
-    font-size: 1.2em !important;
-    font-weight: 600 !important;
-    border-radius: 50px !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.2em;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin: 10px 0;
 }
 
 .config-btn:hover:not(:disabled) {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
 }
 
 .config-btn:disabled {
-    opacity: 0.6 !important;
-    cursor: not-allowed !important;
-    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%) !important;
-    transform: none !important;
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .config-status {
-    text-align: center !important;
-    margin-top: 15px !important;
-    padding: 10px !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    min-height: 20px !important;
-    font-size: 1.1em !important;
-    background: transparent !important;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 1.3em;
+    font-weight: 600;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .config-status.success {
-    background: rgba(72, 187, 120, 0.1) !important;
-    color: #38a169 !important;
-    border: 1px solid rgba(72, 187, 120, 0.3) !important;
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
 }
 
 .config-status.error {
-    background: rgba(245, 101, 101, 0.1) !important;
-    color: #e53e3e !important;
-    border: 1px solid rgba(245, 101, 101, 0.3) !important;
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+    color: white;
 }
 
 .config-status.info {
-    background: rgba(66, 153, 225, 0.1) !important;
-    color: #3182ce !important;
-    border: 1px solid rgba(66, 153, 225, 0.3) !important;
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: white;
 }
 
 /* 中间内容区域 - 左右布局：抽签|号码状态 */
@@ -497,6 +444,14 @@ table tr:hover {
         gap: 20px;
     }
     
+    /* 配置区域在移动设备上的优化 */
+    .config-section,
+    .lottery-section,
+    .numbers-grid,
+    .results-section {
+        padding: 20px;
+    }
+    
     .status {
         justify-content: center;
         text-align: center;
@@ -523,19 +478,6 @@ table tr:hover {
     
     header h1 {
         font-size: 2em;
-    }
-
-    /* 配置区域在移动设备上的优化 */
-    .config-group {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .config-group label,
-    .config-group input,
-    .config-btn {
-        width: 100%;
-        max-width: 250px;
     }
 }
 
