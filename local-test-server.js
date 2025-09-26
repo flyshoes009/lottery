@@ -10,7 +10,7 @@ const stateHandler = require('./netlify/functions/state.js').handler;
 const resetHandler = require('./netlify/functions/reset.js').handler;
 const configHandler = require('./netlify/functions/config.js').handler;
 
-const PORT = 3000;
+const PORT = 3001;
 
 // MIME类型映射
 const mimeTypes = {
@@ -156,7 +156,7 @@ server.listen(PORT, () => {
     console.log('   - GET  /.netlify/functions/state');
     console.log('   - POST /.netlify/functions/reset');
     console.log('   - GET/POST /.netlify/functions/config');
-    console.log('\n🎯 请在浏览器中访问: http://localhost:3000');
+    console.log(`\n🎯 请在浏览器中访问: http://localhost:${PORT}`);
     console.log('   或点击预览按钮测试完整功能');
     console.log('\n按 Ctrl+C 停止服务器');
 });

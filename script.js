@@ -26,9 +26,9 @@ const elements = {
 };
 
 // 初始化页面
-document.addEventListener('DOMContentLoaded', function() {
-    loadConfig(); // 先加载配置
-    loadLotteryState();
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadConfig(); // 先加载配置
+    await loadLotteryState(); // 再加载状态
     bindEvents();
 });
 
@@ -120,6 +120,8 @@ async function handleConfigUpdate() {
         if (data.success) {
             totalNumbers = newTotalNumbers;
             initializeNumbersGrid();
+            // 重新渲染已抽中的号码
+            updateNumbersGrid();
             updateStatus();
             showConfigStatus(data.message, 'success');
         } else {
@@ -436,9 +438,11 @@ async function loadLotteryState() {
             participants = data.state.participants || [];
             
             // 更新配置
-            if (data.state.totalNumbers) {
+            if (data.state.totalNumbers && data.state.totalNumbers !== totalNumbers) {
                 totalNumbers = data.state.totalNumbers;
                 elements.totalNumbers.value = totalNumbers;
+                // 重新初始化号码网格以适应新的号码个数
+                initializeNumbersGrid();
             }
             
             // 检查是否已开始抽签
