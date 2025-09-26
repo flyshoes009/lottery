@@ -56,23 +56,29 @@ main {
     grid-template-columns: 1fr 1fr;
     gap: 30px;
     margin-bottom: 30px;
+    min-height: auto;
+    width: 100%;
 }
 
 /* 配置区域 */
 .config-section {
     grid-column: 1 / -1;
-    background: rgba(255, 255, 255, 0.95);
+    background: #ffffff !important; /* 强制白色背景 */
     padding: 25px;
     border-radius: 15px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
+    border: 2px solid #e2e8f0; /* 添加边框增强视觉效果 */
+    position: relative;
+    z-index: 10; /* 确保在最上层 */
 }
 
 .config-section h3 {
     text-align: center;
     margin-bottom: 20px;
-    color: #4a5568;
+    color: #4a5568 !important;
     font-size: 1.3em;
+    background: transparent;
 }
 
 .config-group {
@@ -146,6 +152,20 @@ main {
     background: rgba(245, 101, 101, 0.1);
     color: #e53e3e;
     border: 1px solid rgba(245, 101, 101, 0.3);
+}
+
+/* 强化配置区域显示 - 防止被其他样式覆盖 */
+.container main .config-section {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background-color: #ffffff !important;
+    min-height: 120px;
+}
+
+.container main .config-section * {
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* 抽签区域 */
