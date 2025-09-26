@@ -17,15 +17,15 @@
         </header>
 
         <main>
-            <!-- 配置区域 -->
-            <div class="config-section">
-                <h3>抽签配置</h3>
-                <div class="config-group">
-                    <label for="totalNumbers">号码个数:</label>
-                    <input type="number" id="totalNumbers" value="23" min="1" max="100">
+            <!-- 配置区域 - 独占一整行 -->
+            <div class="config-section" style="background: white !important; padding: 30px !important; border-radius: 15px !important; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important; margin-bottom: 30px !important; position: relative !important; z-index: 100 !important;">
+                <h3 style="color: #4a5568 !important; background: transparent !important;">抽签配置</h3>
+                <div class="config-group" style="background: transparent !important;">
+                    <label for="totalNumbers" style="color: #4a5568 !important; background: transparent !important;">号码个数:</label>
+                    <input type="number" id="totalNumbers" value="23" min="1" max="100" style="background: white !important;">
                     <button id="configButton" class="config-btn">确认配置</button>
                 </div>
-                <div id="configStatus" class="config-status"></div>
+                <div id="configStatus" class="config-status" style="background: transparent !important;"></div>
             </div>
 
             <!-- 主要内容区域 -->
