@@ -27,9 +27,37 @@ const elements = {
 
 // 初始化页面
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log('页面加载完成，开始初始化...');
+    
+    // 验证所有关键元素是否存在
+    const missingElements = [];
+    Object.keys(elements).forEach(key => {
+        if (!elements[key]) {
+            missingElements.push(key);
+        }
+    });
+    
+    if (missingElements.length > 0) {
+        console.error('缺失的DOM元素:', missingElements);
+    }
+    
     await loadConfig(); // 先加载配置
     await loadLotteryState(); // 再加载状态
     bindEvents();
+    
+    // 备用事件绑定 - 确保配置按钮能响应点击
+    setTimeout(() => {
+        const configBtn = document.getElementById('configButton');
+        if (configBtn && !configBtn.onclick) {
+            console.log('添加备用点击事件');
+            configBtn.onclick = function(e) {
+                e.preventDefault();
+                handleConfigUpdate();
+            };
+        }
+    }, 100);
+    
+    console.log('页面初始化完成');
 });
 
 // 加载配置
@@ -91,7 +119,10 @@ function showConfigStatus(message, type) {
 
 // 处理配置更新
 async function handleConfigUpdate() {
+    console.log('配置按钮被点击');
+    
     const newTotalNumbers = parseInt(elements.totalNumbers.value);
+    console.log('新的号码个数:', newTotalNumbers);
     
     if (!newTotalNumbers || newTotalNumbers < 1 || newTotalNumbers > 100) {
         showConfigStatus('号码个数必须在1-100之间', 'error');
@@ -107,6 +138,7 @@ async function handleConfigUpdate() {
     elements.configButton.textContent = '配置中...';
     
     try {
+        console.log('发送配置请求...');
         const response = await fetch('/.netlify/functions/config', {
             method: 'POST',
             headers: {
@@ -116,6 +148,7 @@ async function handleConfigUpdate() {
         });
         
         const data = await response.json();
+        console.log('配置响应:', data);
         
         if (data.success) {
             totalNumbers = newTotalNumbers;
@@ -152,38 +185,71 @@ function initializeNumbersGrid() {
 
 // 绑定事件
 function bindEvents() {
-    elements.configButton.addEventListener('click', handleConfigUpdate);
-    elements.drawButton.addEventListener('click', handleDraw);
-    elements.exportButton.addEventListener('click', exportToCSV);
-    elements.resetButton.addEventListener('click', showResetModal);
-    elements.confirmReset.addEventListener('click', confirmReset);
-    elements.cancelReset.addEventListener('click', hideResetModal);
+    console.log('开始绑定事件...');
+    
+    // 确保元素存在再绑定事件
+    if (elements.configButton) {
+        elements.configButton.addEventListener('click', handleConfigUpdate);
+        console.log('配置按钮事件绑定成功');
+    } else {
+        console.error('配置按钮元素未找到');
+    }
+    
+    if (elements.drawButton) {
+        elements.drawButton.addEventListener('click', handleDraw);
+    }
+    
+    if (elements.exportButton) {
+        elements.exportButton.addEventListener('click', exportToCSV);
+    }
+    
+    if (elements.resetButton) {
+        elements.resetButton.addEventListener('click', showResetModal);
+    }
+    
+    if (elements.confirmReset) {
+        elements.confirmReset.addEventListener('click', confirmReset);
+    }
+    
+    if (elements.cancelReset) {
+        elements.cancelReset.addEventListener('click', hideResetModal);
+    }
     
     // 回车键支持
-    elements.classNumber.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            handleDraw();
-        }
-    });
+    if (elements.classNumber) {
+        elements.classNumber.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleDraw();
+            }
+        });
+    }
     
-    elements.totalNumbers.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            handleConfigUpdate();
-        }
-    });
+    if (elements.totalNumbers) {
+        elements.totalNumbers.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleConfigUpdate();
+            }
+        });
+    }
     
-    elements.resetPassword.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            confirmReset();
-        }
-    });
+    if (elements.resetPassword) {
+        elements.resetPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmReset();
+            }
+        });
+    }
     
     // 点击模态框外部关闭
-    elements.resetModal.addEventListener('click', function(e) {
-        if (e.target === elements.resetModal) {
-            hideResetModal();
-        }
-    });
+    if (elements.resetModal) {
+        elements.resetModal.addEventListener('click', function(e) {
+            if (e.target === elements.resetModal) {
+                hideResetModal();
+            }
+        });
+    }
+    
+    console.log('所有事件绑定完成');
 }
 
 // 处理抽签
